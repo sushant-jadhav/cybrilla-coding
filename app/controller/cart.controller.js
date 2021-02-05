@@ -1,6 +1,7 @@
 const db = require("../models");
 const Carts = db.carts;
 const Product = db.products;
+const PromotionRules = db.promotionRules;
 const Op = db.Sequelize.Op;
 var common = require('../helpers/common');
 
@@ -50,7 +51,7 @@ exports.create = async (req, res) => {
       });
 };
 
-// Retrieve all Cartss from the database.
+// Retrieve all Carts from the database.
 exports.findAll = (req, res) => {
     const title = req.query.title;
     var condition = title ? { title: { [Op.like]: `%${title}%` } } : null;
@@ -160,21 +161,96 @@ exports.deleteAll = (req, res) => {
         .catch(err => {
           res.status(500).send({
             message:
-              err.message || "Some error occurred while removing all Cartss."
+              err.message || "Some error occurred while removing all Carts."
           });
         });
 };
 
-// Find all published Cartss
-exports.findAllPublished = (req, res) => {
-    Carts.findAll({ where: { published: true } })
-    .then(data => {
-      res.send(data);
-    })
-    .catch(err => {
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving Cartss."
-      });
+// Find Carts products with discount Price
+
+exports.findAllCartProducts = async (req, res) => {
+    let cart_ids = req.query.cart_ids;
+
+    if (cart_ids !== '') {
+        cart_ids = [...cart_ids];
+    }
+    var condition = cart_ids ? {id: {[Op.in]: cart_ids}} : null;
+    let message = 'Cart Product Found';
+
+    const CartProduct = await Carts.findOne({
+        where: condition,
+        attributes: [
+            'total_amount',
+            [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
+        ],
+        raw: true,
     });
+
+    const CartProductQuantity = await Carts.findAll({
+        where: condition,
+        attributes: [
+            'id','quantity','total_amount','product_id'
+            // [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
+        ],
+        raw: true,
+    });
+
+    let totalDiscountCartAmount = 0.00;
+
+    for (let i=0;i<CartProductQuantity.length>0;i++){
+        let cartProd = CartProductQuantity[i];
+        const PromotionRule = await PromotionRules.findOne({
+            where: {product_id:cartProd.product_id},
+            // attributes: [
+            //     'total_amount',
+            //     [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
+            // ],
+            // raw: true,
+        });
+        if(PromotionRule) {
+
+            if (cartProd.quantity == PromotionRule.quantity) {
+                totalDiscountCartAmount = totalDiscountCartAmount + parseInt(PromotionRule.discount_price);
+            }else if(cartProd.quantity>PromotionRule.quantity){
+                let multiplyQuantity = cartProd.quantity/PromotionRule.quantity;
+                let quantityAmount = multiplyQuantity * parseInt(PromotionRule.discount_price);
+                totalDiscountCartAmount = totalDiscountCartAmount + quantityAmount;
+            }
+
+            console.log('totalCartAmount',totalDiscountCartAmount);
+        }
+    }
+
+    let discountData = {
+        discount_amount:totalDiscountCartAmount,
+        total_amount:parseFloat(CartProduct.total_amount)
+    };
+
+    common.htttpWrapper({
+        code:200,
+        message:message,
+        data:{
+            discount_data:discountData,
+            cart_data:CartProductQuantity
+        }
+    },res);
+
+
+    // .then(data => {
+    //     let message = 'Cart Product Found';
+    //     if(data.length===0){
+    //         message = 'Cart Product Not Found';
+    //     }
+    //     common.htttpWrapper({
+    //         code:200,
+    //         message:message,
+    //         data:data
+    //     },res);
+    // })
+    // .catch(err => {
+    //     common.htttpWrapper({
+    //         code:500,
+    //         message:err.message || "Some error occurred while retrieving Carts.",
+    //     },res);
+    // });
 };

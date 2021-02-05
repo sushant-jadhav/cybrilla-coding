@@ -1,6 +1,6 @@
 module.exports = app => {
     const carts = require("../controller/cart.controller");
-    
+
     var router = require("express").Router();
 
     // Create a new Tutorial
@@ -10,7 +10,7 @@ module.exports = app => {
     router.get("/", carts.findAll);
 
     // Retrieve all published carts
-    router.get("/published", carts.findAllPublished);
+    router.get("/product", carts.findAllCartProducts);
 
     // Retrieve a single Tutorial with id
     router.get("/:id", carts.findOne);
