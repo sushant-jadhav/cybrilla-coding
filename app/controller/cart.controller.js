@@ -284,7 +284,6 @@ exports.findAllCartProducts = async (req, res) => {
                     // console.log('discount_price',PromotionRule.discount_price);
 
                     totalDiscountCartAmount = totalDiscountCartAmount + parseInt(PromotionRule.discount_price);
-                    console.log('totalDiscountCartAmount',totalDiscountCartAmount);
                 } else if (cartProd.quantity > PromotionRule.quantity) {
 
                     let multiplyQuantity = parseInt(cartProd.quantity) / PromotionRule.quantity,
@@ -295,11 +294,9 @@ exports.findAllCartProducts = async (req, res) => {
                     totalDiscountCartAmount = totalDiscountCartAmount + discountAmt;
                 } else if (cartProd.quantity < PromotionRule.quantity)  {
                     totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.quantity) * parseInt(cartProd.amount);
-                    console.log('totalDiscountCartAmount',totalDiscountCartAmount);
                 }
             }else{
                 totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.quantity) * parseInt(cartProd.amount);
-                console.log('totalDiscountCartAmount wo PromotionRule',totalDiscountCartAmount);
             }
         }
 
@@ -347,7 +344,6 @@ exports.findAllCartProducts = async (req, res) => {
         }, res);
 
     }catch(e){
-        console.log('e',e);
         if (e instanceof ReferenceError) {
             // Output expected ReferenceErrors.
             common.htttpWrapper({
