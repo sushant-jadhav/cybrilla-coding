@@ -232,7 +232,7 @@ exports.findAllCartProducts = async (req, res) => {
         console.log('cart_ids',cart_ids);
         var condition = cart_ids ? {id: {[Op.in]: cart_ids}} : null;
         let message = 'Cart Product Found';
-        console.log('condition',condition);
+        // console.log('condition',condition);
         const CartProduct = await Carts.findOne({
             where: condition,
             attributes: [
@@ -245,12 +245,12 @@ exports.findAllCartProducts = async (req, res) => {
         const CartProductQuantity = await Carts.findAll({
             where: condition,
             attributes: [
-                'id', 'quantity', 'total_amount', 'product_id'
+                'id', 'quantity', 'total_amount', 'product_id','amount'
             ],
             include: [
                 {
                     model: db.products,
-                    row: true
+                    // row: true
                 }
             ]
         });
@@ -278,23 +278,37 @@ exports.findAllCartProducts = async (req, res) => {
                 where: {product_id: cartProd.product_id},
             });
             if (PromotionRule) {
+                console.log('PromotionRule',cartProd.product_id,PromotionRule.product_id);
 
                 if (cartProd.quantity == PromotionRule.quantity) {
-                    totalDiscountCartAmount = totalDiscountCartAmount + parseInt(PromotionRule.discount_price);
-                } else if (cartProd.quantity > PromotionRule.quantity) {
-                    let multiplyQuantity = parseInt(cartProd.quantity) / PromotionRule.quantity,
-                        remaningQuantity = cartProd.quantity % PromotionRule.quantity,
-                        discountAmt = multiplyQuantity * parseInt(PromotionRule.discount_price) + remaningQuantity * parseInt(PromotionRule.discount_price);
+                    // console.log('discount_price',PromotionRule.discount_price);
 
+                    totalDiscountCartAmount = totalDiscountCartAmount + parseInt(PromotionRule.discount_price);
+                    console.log('totalDiscountCartAmount',totalDiscountCartAmount);
+                } else if (cartProd.quantity > PromotionRule.quantity) {
+
+                    let multiplyQuantity = parseInt(cartProd.quantity) / PromotionRule.quantity,
+
+                        remaningQuantity = cartProd.quantity % PromotionRule.quantity,
+
+                        discountAmt = multiplyQuantity * parseInt(PromotionRule.discount_price) + remaningQuantity * parseInt(PromotionRule.amount);
                     totalDiscountCartAmount = totalDiscountCartAmount + discountAmt;
                 } else if (cartProd.quantity < PromotionRule.quantity)  {
-                    totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.total_amount);
+                    totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.quantity) * parseInt(cartProd.amount);
+                    console.log('totalDiscountCartAmount',totalDiscountCartAmount);
                 }
+            }else{
+                totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.quantity) * parseInt(cartProd.amount);
+                console.log('totalDiscountCartAmount wo PromotionRule',totalDiscountCartAmount);
             }
         }
 
+        if(totalDiscountCartAmount>150){
+            totalDiscountCartAmount = totalDiscountCartAmount - 20;
+        }
+
         const responseObject = CartProductQuantity.map((data) => {
-            console.log('data',data);
+            // console.log('data',data);
             return Object.assign(
                 {},
                 {
