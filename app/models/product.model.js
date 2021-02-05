@@ -33,12 +33,18 @@ module.exports = (sequelize, Sequelize) => {
     },{
       classMethods: {
         associate: function (models) {
-          // Products.belongsTo(models.carts);
+          // Products.belongsTo(models.carts,{foreignKey:'id'});
           // order.belongsToMany(models.products, { through: { model: models.orderProduct } });
           // order.hasMany(models.orderProduct);
         }
       }
     });
+
+    Products.associate = (models) => {
+      Products.belongsTo(models.carts, { foreignKey:{ name: 'id'} });
+    };
+
+    // Products.sync();
 
     return Products;
   };

@@ -6,6 +6,10 @@ module.exports = (sequelize, Sequelize) => {
     },
     product_id:{
       type:Sequelize.BIGINT,
+      references: {
+        model: 'Cart',// company migration define
+        key: 'id'
+      }
     },
     amount:{
       type: Sequelize.DECIMAL
@@ -33,6 +37,12 @@ module.exports = (sequelize, Sequelize) => {
       }
     }
   });
+
+  Carts.associate = (models) => {
+    Carts.hasOne(models.products, { foreignKey:{ name: 'id'}  });
+  };
+
+  Carts.sync();
 
   return Carts;
 };

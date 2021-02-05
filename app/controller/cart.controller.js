@@ -247,12 +247,7 @@ exports.findAllCartProducts = async (req, res) => {
             attributes: [
                 'id', 'quantity', 'total_amount', 'product_id','amount'
             ],
-            include: [
-                {
-                    model: db.products,
-                    // row: true
-                }
-            ]
+            include: Product
         });
 
         // const CartProductQuantity = db.sequelize.query("SELECT carts.id as cart_id, quantity, total_amount, product_id, products.* FROM `carts` inner join products on carts.product_id=products.id", { type: QueryTypes.SELECT });
@@ -344,6 +339,7 @@ exports.findAllCartProducts = async (req, res) => {
         }, res);
 
     }catch(e){
+        console.log('e',e);
         if (e instanceof ReferenceError) {
             // Output expected ReferenceErrors.
             common.htttpWrapper({

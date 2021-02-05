@@ -36,8 +36,15 @@ db.products        = require("./product.model")(sequelize, Sequelize);
 db.promotionRules = require("./promotionRule.model")(sequelize, Sequelize);
 
 //Relations
-db.products.belongsTo(db.carts,{foreignKey: 'id'});
-db.carts.hasOne(db.products,{foreignKey: 'id'});
+// db.carts.hasOne(db.products,{foreignKey: 'id'});
+// db.products.belongsTo(db.carts,{foreignKey: 'id'});
+
+Object.keys(db).forEach(key => {
+  console.log('key',db[key].associate);
+  if (db[key] && db[key].associate) {
+    db[key].associate(db);
+  }
+});
 
 // sequelize.sync({ force: true });
 
