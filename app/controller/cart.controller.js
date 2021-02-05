@@ -169,98 +169,132 @@ exports.deleteAll = (req, res) => {
 // Find Carts products with discount Price
 
 exports.findAllCartProducts = async (req, res) => {
-    let cart_ids = req.query.cart_ids;
+    try {
+        let cart_ids = req.query.cart_ids;
 
-    if (cart_ids !== '') {
-        cart_ids = [...cart_ids];
-    }
-    var condition = cart_ids ? {id: {[Op.in]: cart_ids}} : null;
-    let message = 'Cart Product Found';
+        if (cart_ids !== '') {
+            cart_ids = [...cart_ids];
+        }
 
-    const CartProduct = await Carts.findOne({
-        where: condition,
-        attributes: [
-            'total_amount',
-            [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
-        ],
-        raw: true,
-    });
-
-    const CartProductQuantity = await Carts.findAll({
-        where: condition,
-        attributes: [
-            'id','quantity','total_amount','product_id'
-            // [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
-        ],
-        include: [
-            {
-                model: db.products,
-                row:true
-            }
-        ]
-    });
-
-    let totalDiscountCartAmount = 0.00;
-
-    for (let i=0;i<CartProductQuantity.length>0;i++){
-        let cartProd = CartProductQuantity[i];
-        const PromotionRule = await PromotionRules.findOne({
-            where: {product_id:cartProd.product_id},
-            // attributes: [
-            //     'total_amount',
-            //     [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
-            // ],
-            // raw: true,
+        if(cart_ids===''){
+            common.htttpWrapper({
+                code: 200,
+                message: 'Products not present',
+                data: {
+                    cart_data: [],
+                    discount_data: {}
+                }
+            }, res);
+        }
+        console.log('cart_ids',cart_ids);
+        var condition = cart_ids ? {id: {[Op.in]: cart_ids}} : null;
+        let message = 'Cart Product Found';
+        console.log('condition',condition);
+        const CartProduct = await Carts.findOne({
+            where: condition,
+            attributes: [
+                'total_amount',
+                [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
+            ],
+            raw: true,
         });
-        if(PromotionRule) {
 
-            if (cartProd.quantity == PromotionRule.quantity) {
-                totalDiscountCartAmount = totalDiscountCartAmount + parseInt(PromotionRule.discount_price);
-            }else if(cartProd.quantity>PromotionRule.quantity){
-                let multiplyQuantity = cartProd.quantity/PromotionRule.quantity;
-                let quantityAmount = multiplyQuantity * parseInt(PromotionRule.discount_price);
-                totalDiscountCartAmount = totalDiscountCartAmount + quantityAmount;
-            }else{
-                totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.total_amount);
+        const CartProductQuantity = await Carts.findAll({
+            where: condition,
+            attributes: [
+                'id', 'quantity', 'total_amount', 'product_id'
+            ],
+            include: [
+                {
+                    model: db.products,
+                    row: true
+                }
+            ]
+        });
+
+        if (CartProductQuantity.length === 0) {
+            common.htttpWrapper({
+                code: 200,
+                message: message,
+                data: {
+                    cart_data: [],
+                    discount_data: {}
+                }
+            }, res);
+        }
+
+        let totalDiscountCartAmount = 0.00;
+
+        for (let i = 0; i < CartProductQuantity.length > 0; i++) {
+            let cartProd = CartProductQuantity[i];
+            const PromotionRule = await PromotionRules.findOne({
+                where: {product_id: cartProd.product_id},
+            });
+            if (PromotionRule) {
+
+                if (cartProd.quantity == PromotionRule.quantity) {
+                    totalDiscountCartAmount = totalDiscountCartAmount + parseInt(PromotionRule.discount_price);
+                } else if (cartProd.quantity > PromotionRule.quantity) {
+                    let multiplyQuantity = parseInt(cartProd.quantity) / PromotionRule.quantity,
+                        remaningQuantity = cartProd.quantity % PromotionRule.quantity,
+                        discountAmt = multiplyQuantity * parseInt(PromotionRule.discount_price) + remaningQuantity * parseInt(PromotionRule.discount_price);
+
+                    totalDiscountCartAmount = totalDiscountCartAmount + discountAmt;
+                } else if (cartProd.quantity < PromotionRule.quantity)  {
+                    totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.total_amount);
+                }
             }
         }
-    }
 
-    const responseObject = CartProductQuantity.map((data) => {
-        let cartProd = data;
-        console.log(typeof data.product,JSON.stringify(data.product,null,2));
-        return Object.assign(
-            {},
-            {
-                id: data.id,
-                product_id: data.product_id,
-                quantity: data.quantity,
-                total_amount: data.total_amount,
-                product: Object.assign(
-                    {},
-                    {
-                        id: data.product.id,
-                        title: data.product.title,
-                        description: data.product.description,
-                        price: data.product.price,
-                        is_discount: data.product.is_discount,
-                        is_active: data.product.is_active
-                    }
-                )
+        const responseObject = CartProductQuantity.map((data) => {
+            return Object.assign(
+                {},
+                {
+                    id: data.id,
+                    product_id: data.product_id,
+                    quantity: data.quantity,
+                    total_amount: data.total_amount,
+                    product: Object.assign(
+                        {},
+                        {
+                            id: data.product.id,
+                            title: data.product.title,
+                            description: data.product.description,
+                            price: data.product.price,
+                            is_discount: data.product.is_discount,
+                            is_active: data.product.is_active
+                        }
+                    )
+                });
         });
-    });
 
-    let discountData = {
-        discount_amount:totalDiscountCartAmount,
-        total_amount:parseFloat(CartProduct.total_amount)
-    };
+        let discountData = {
+            discount_amount: totalDiscountCartAmount,
+            total_amount: parseFloat(CartProduct.total_amount)
+        };
 
-    common.htttpWrapper({
-        code:200,
-        message:message,
-        data:{
-            cart_data:responseObject,
-            discount_data:discountData
+        common.htttpWrapper({
+            code: 200,
+            message: message,
+            data: {
+                cart_data: responseObject,
+                discount_data: discountData
+            }
+        }, res);
+
+    }catch(e){
+        if (e instanceof ReferenceError) {
+            // Output expected ReferenceErrors.
+            common.htttpWrapper({
+                code: 500,
+                message: 'Something went wrong',
+            }, res);
+        } else {
+            // Output unexpected Errors.
+            common.htttpWrapper({
+                code: 500,
+                message: 'Something went wrong',
+            }, res);
         }
-    },res);
+    }
 };

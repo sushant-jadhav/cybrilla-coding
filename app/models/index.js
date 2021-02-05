@@ -16,7 +16,8 @@ const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
     underscoredAll: true,
     createdAt:'created_at',
     updatedAt:'updated_at',
-  }
+  },
+  logging: false
 });
 
 const db = {};
