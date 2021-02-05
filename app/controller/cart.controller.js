@@ -192,7 +192,12 @@ exports.findAllCartProducts = async (req, res) => {
             'id','quantity','total_amount','product_id'
             // [db.Sequelize.fn('sum', db.Sequelize.col('total_amount')), 'total_amount'],
         ],
-        raw: true,
+        include: [
+            {
+                model: db.products,
+                row:true
+            }
+        ]
     });
 
     let totalDiscountCartAmount = 0.00;
@@ -215,11 +220,35 @@ exports.findAllCartProducts = async (req, res) => {
                 let multiplyQuantity = cartProd.quantity/PromotionRule.quantity;
                 let quantityAmount = multiplyQuantity * parseInt(PromotionRule.discount_price);
                 totalDiscountCartAmount = totalDiscountCartAmount + quantityAmount;
+            }else{
+                totalDiscountCartAmount = totalDiscountCartAmount + parseInt(cartProd.total_amount);
             }
-
-            console.log('totalCartAmount',totalDiscountCartAmount);
         }
     }
+
+    const responseObject = CartProductQuantity.map((data) => {
+        let cartProd = data;
+        console.log(typeof data.product,JSON.stringify(data.product,null,2));
+        return Object.assign(
+            {},
+            {
+                id: data.id,
+                product_id: data.product_id,
+                quantity: data.quantity,
+                total_amount: data.total_amount,
+                product: Object.assign(
+                    {},
+                    {
+                        id: data.product.id,
+                        title: data.product.title,
+                        description: data.product.description,
+                        price: data.product.price,
+                        is_discount: data.product.is_discount,
+                        is_active: data.product.is_active
+                    }
+                )
+        });
+    });
 
     let discountData = {
         discount_amount:totalDiscountCartAmount,
@@ -230,27 +259,8 @@ exports.findAllCartProducts = async (req, res) => {
         code:200,
         message:message,
         data:{
-            discount_data:discountData,
-            cart_data:CartProductQuantity
+            cart_data:responseObject,
+            discount_data:discountData
         }
     },res);
-
-
-    // .then(data => {
-    //     let message = 'Cart Product Found';
-    //     if(data.length===0){
-    //         message = 'Cart Product Not Found';
-    //     }
-    //     common.htttpWrapper({
-    //         code:200,
-    //         message:message,
-    //         data:data
-    //     },res);
-    // })
-    // .catch(err => {
-    //     common.htttpWrapper({
-    //         code:500,
-    //         message:err.message || "Some error occurred while retrieving Carts.",
-    //     },res);
-    // });
 };

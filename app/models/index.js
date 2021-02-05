@@ -34,4 +34,8 @@ db.orders        = require("./order.model")(sequelize, Sequelize);
 db.products        = require("./product.model")(sequelize, Sequelize);
 db.promotionRules = require("./promotionRule.model")(sequelize, Sequelize);
 
+//Relations
+// db.products.hasOne(db.carts,{foreignKey: 'product_id'});
+db.carts.hasOne(db.products,{foreignKey: 'id'});
+
 module.exports = db;
