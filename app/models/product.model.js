@@ -30,6 +30,14 @@ module.exports = (sequelize, Sequelize) => {
       is_active: {
         type: Sequelize.BOOLEAN
       },
+    },{
+      classMethods: {
+        associate: function (models) {
+          // Products.belongsTo(models.carts);
+          // order.belongsToMany(models.products, { through: { model: models.orderProduct } });
+          // order.hasMany(models.orderProduct);
+        }
+      }
     });
 
     return Products;

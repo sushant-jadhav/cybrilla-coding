@@ -1,4 +1,5 @@
 const db = require("../models");
+const { QueryTypes } = require('sequelize');
 const Carts = db.carts;
 const Product = db.products;
 const PromotionRules = db.promotionRules;
@@ -21,8 +22,42 @@ exports.create = async (req, res) => {
     if(!productData){
         common.htttpWrapper({
             code: 500,
+            success:false,
             message: 'Product Not Found',
         }, res);
+    }
+
+    const cartproductData = await Carts.findOne({where:{product_id:req.body.product_id}});
+
+    if(cartproductData){
+        Carts.update({quantity:req.body.quantity}, {
+            where: { id: cartproductData.id }
+        })
+            .then(num => {
+                if (num == 1) {
+                    common.htttpWrapper({
+                        code: 200,
+                        success:false,
+                        message: 'Cart Product Updated!',
+                        data:data
+                    }, res);
+                } else {
+                    common.htttpWrapper({
+                        code: 500,
+                        success:true,
+                        message: 'Something went wrong!',
+                        data:data
+                    }, res);
+                }
+            })
+            .catch(err => {
+                common.htttpWrapper({
+                    code: 500,
+                    success:false,
+                    message: 'Something went wrong!',
+                    data:data
+                }, res);
+            });
     }
 
     // Create a Carts
@@ -39,6 +74,7 @@ exports.create = async (req, res) => {
       .then(data => {
           common.htttpWrapper({
               code: 200,
+              success:true,
               message: 'Cart Product Added!',
               data:data
           }, res);
@@ -46,6 +82,7 @@ exports.create = async (req, res) => {
       .catch(err => {
           common.htttpWrapper({
               code: 500,
+              success:false,
               message: err.message || "Some error occurred while creating the Carts."
           }, res);
       });
@@ -60,6 +97,7 @@ exports.findAll = (req, res) => {
       .then(data => {
           common.htttpWrapper({
               code:200,
+              success:true,
               message:'Cart Found',
               data:data
           },res);
@@ -67,6 +105,7 @@ exports.findAll = (req, res) => {
       .catch(err => {
           common.htttpWrapper({
               code:500,
+              success:false,
               message:err.message || "Some error occurred while getting the Carts.",
           },res);
       });
@@ -81,12 +120,14 @@ exports.findOne = (req, res) => {
         if(data){
           common.htttpWrapper({
             code:200,
+              success:true,
             message:'Cart Product Found',
             data:data
           },res);
         }else{
           common.htttpWrapper({
             code:200,
+              success:true,
             message:'Cart Not Found',
             data:data
           },res);
@@ -160,6 +201,7 @@ exports.deleteAll = (req, res) => {
         })
         .catch(err => {
           res.status(500).send({
+              success:false,
             message:
               err.message || "Some error occurred while removing all Carts."
           });
@@ -179,6 +221,7 @@ exports.findAllCartProducts = async (req, res) => {
         if(cart_ids===''){
             common.htttpWrapper({
                 code: 200,
+                success:true,
                 message: 'Products not present',
                 data: {
                     cart_data: [],
@@ -212,9 +255,13 @@ exports.findAllCartProducts = async (req, res) => {
             ]
         });
 
+        // const CartProductQuantity = db.sequelize.query("SELECT carts.id as cart_id, quantity, total_amount, product_id, products.* FROM `carts` inner join products on carts.product_id=products.id", { type: QueryTypes.SELECT });
+
+        // console.log('CartProductQuantity',CartProductQuantity);
         if (CartProductQuantity.length === 0) {
             common.htttpWrapper({
                 code: 200,
+                success:true,
                 message: message,
                 data: {
                     cart_data: [],
@@ -247,6 +294,7 @@ exports.findAllCartProducts = async (req, res) => {
         }
 
         const responseObject = CartProductQuantity.map((data) => {
+            console.log('data',data);
             return Object.assign(
                 {},
                 {
@@ -254,17 +302,18 @@ exports.findAllCartProducts = async (req, res) => {
                     product_id: data.product_id,
                     quantity: data.quantity,
                     total_amount: data.total_amount,
-                    product: Object.assign(
-                        {},
-                        {
-                            id: data.product.id,
-                            title: data.product.title,
-                            description: data.product.description,
-                            price: data.product.price,
-                            is_discount: data.product.is_discount,
-                            is_active: data.product.is_active
-                        }
-                    )
+                    product:data.product,
+                    // product: Object.assign(
+                    //     {},
+                    //     {
+                    //         id: data.product.id,
+                    //         title: data.product.title,
+                    //         description: data.product.description,
+                    //         price: data.product.price,
+                    //         is_discount: data.product.is_discount,
+                    //         is_active: data.product.is_active
+                    //     }
+                    // )
                 });
         });
 
@@ -275,6 +324,7 @@ exports.findAllCartProducts = async (req, res) => {
 
         common.htttpWrapper({
             code: 200,
+            success:true,
             message: message,
             data: {
                 cart_data: responseObject,
@@ -283,16 +333,19 @@ exports.findAllCartProducts = async (req, res) => {
         }, res);
 
     }catch(e){
+        console.log('e',e);
         if (e instanceof ReferenceError) {
             // Output expected ReferenceErrors.
             common.htttpWrapper({
                 code: 500,
+                success:false,
                 message: 'Something went wrong',
             }, res);
         } else {
             // Output unexpected Errors.
             common.htttpWrapper({
                 code: 500,
+                success:false,
                 message: 'Something went wrong',
             }, res);
         }

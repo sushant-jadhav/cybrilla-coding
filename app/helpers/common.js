@@ -7,7 +7,8 @@ Common.prototype.htttpWrapper = function(object,res){
             message : object.message
         },
         data : object.data,
-    }); 
+        success:object.success
+    });
 }
 
 module.exports = new Common();

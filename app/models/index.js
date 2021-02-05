@@ -36,7 +36,9 @@ db.products        = require("./product.model")(sequelize, Sequelize);
 db.promotionRules = require("./promotionRule.model")(sequelize, Sequelize);
 
 //Relations
-// db.products.hasOne(db.carts,{foreignKey: 'product_id'});
+db.products.belongsTo(db.carts,{foreignKey: 'id'});
 db.carts.hasOne(db.products,{foreignKey: 'id'});
+
+// sequelize.sync({ force: true });
 
 module.exports = db;

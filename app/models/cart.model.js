@@ -24,6 +24,14 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING
     },
 
+  },{
+    classMethods: {
+      associate: function (models) {
+        // Carts.hasOne(models.products,{foreignKey:'id'});
+        // order.belongsToMany(models.products, { through: { model: models.orderProduct } });
+        // order.hasMany(models.orderProduct);
+      }
+    }
   });
 
   return Carts;
