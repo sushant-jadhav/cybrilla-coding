@@ -1,6 +1,6 @@
 module.exports = app => {
-    const roles = require("../controller/role.controller");
-    
+    const roles = require("../controller/promotionRule.controller");
+
     var router = require("express").Router();
 
     // Create a new Tutorial
@@ -8,9 +8,6 @@ module.exports = app => {
 
     // Retrieve all roles
     router.get("/", roles.findAll);
-
-    // Retrieve all published roles
-    router.get("/published", roles.findAllPublished);
 
     // Retrieve a single Tutorial with id
     router.get("/:id", roles.findOne);
@@ -24,5 +21,5 @@ module.exports = app => {
     // Delete all roles
     router.delete("/", roles.deleteAll);
 
-    app.use('/api/role', router);
+    app.use('/api/promotion-rule', router);
 };
